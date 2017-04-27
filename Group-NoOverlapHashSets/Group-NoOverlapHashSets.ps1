@@ -1,4 +1,63 @@
 function Group-NoOverlapHashSets {
+<#
+    .SYNOPSIS
+    Groups a set of HashSet<System.Object> based on NO overlapping values
+    
+    .DESCRIPTION
+    Given an array of sets, this will the largest groupings of those sets which do not have any overlapping values.
+
+    Given the sets:
+        {a b c}
+        {d e f}
+        {b e f}
+        {f g h}
+        {x y z}
+        {q r s}
+        {a b q}
+
+    We want to group them into the largest possible groups where NO elements overlap.
+    Given the above, we would expect the result to be:
+        { a b c d e f x y z q r s }
+        { f g h a b q }
+        { b e f }
+        
+    This was designed to help analyze a complex array of deployments with potentially overlapping target servers. The idea was to maximize concurrenct, non-overlapping deployments where possible.
+    
+    .INPUTS
+    System.Collection.Generic.HashSet<System.Object>
+    
+    .OUTPUTS
+    System.Management.Automation.PSCustomObject[]
+    
+    .EXAMPLE
+    Group-NoOverlapHashSets -InputObject $sets
+    
+    Basic usage against an array of HashSet<System.Object>
+    
+    # Declaring HashSets in PS:
+    $a = new-object 'System.Collections.Generic.HashSet[System.Object]'
+    $a.add('cat'); $a.add('dog'); $a.add('parrot')
+    $b = new-object 'System.Collections.Generic.HashSet[System.Object]'
+    $b.add('dog'); $b.add('chtulu'); $b.add('snake')
+    $c = new-object 'System.Collections.Generic.HashSet[System.Object]'
+    $c.add('iguana'); $c.add('raptor'); $c.add('fish')
+    $sets = @($a,$b,$c)
+    # ...
+    
+    .EXAMPLE
+    $sets | Group-NoOverlapHashSets
+    
+    .EXAMPLE
+    Group-NoOverlapHashSets -Initalize $objWithSetProperty -HashSetProperty 'Animals'
+    
+    Supports grouping by a property which is a HashSet<System.Object> such as
+    $obj1 = [pscustomobject]@{ owner = 'bob loblaw'; Animals = new-object 'System.Collections.Generic.HashSet[System.Object]' }
+    $obj1.Animals.Add('tiger')
+    $obj1.Animals.Add('goat')
+    $obj1.Animals.Add('capybara')
+    # ...
+    
+#>
 [CmdletBinding(DefaultParameterSetName='FromInputObject')]
 param(
     # Object which is either a HashSet<System.Object> or contains a property HashSet<System.Object>
