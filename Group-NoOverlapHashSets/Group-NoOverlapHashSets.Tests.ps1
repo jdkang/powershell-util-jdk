@@ -2,6 +2,9 @@
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 <#
+###################################################
+# Summary
+###################################################
 Given the sets:
     {a b c}
     {d e f}
@@ -16,6 +19,29 @@ Given the above, we would expect the result to be:
     { a b c d e f x y z q r s }
     { f g h a b q }
     { b e f }
+    
+    
+GROUPING PREFERENCE
+-------------------
+In order of preference: (1) Highest Count (2) First AllElement (sorted ascending)
+
+e.g.
+    { a b c } \_ Group A
+    { d e f } /
+    { a b e } \_ Group B
+    { c j k } /  
+    { q r s } -  Set
+
+Group A*
+    Count: 6
+    AllElement: abcdef
+Group B
+    Count: 6
+    AllElement: abcejk
+
+Which would result in:
+    { a b c d e f q r s }
+    { a b e c j k }
 #>
 Describe "Group-NoOverlapHashSets" {
     Context "HashSet Objects" {
@@ -150,5 +176,8 @@ Describe "Group-NoOverlapHashSets" {
             $result[2].Objects[0].Name | Should Be "s3"
             $result[2].Objects[0].Letters.SetEquals($set3) | Should Be $true
         }
+    }
+    Context "Grouping Preference" {
+        
     }
 }

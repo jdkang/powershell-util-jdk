@@ -23,6 +23,32 @@ function Group-NoOverlapHashSets {
         
     This was designed to help analyze a complex array of deployments with potentially overlapping target servers. The idea was to maximize concurrenct, non-overlapping deployments where possible.
     
+    GROUPING PREFERENCE
+    ---------=======---
+    Note that it keeps the results "sorted" by SuperSet count at all times in order to maximize the chances of grouping into the largest SuperSet.
+    
+    However, there is the condition where two SuperSets have an equal count. In this case, we need a tie-breaker, so we expose an ordered, concat value "AllElements" as a secondary sort key.
+    
+    In order of preference: (1) Highest Count (2) First AllElement (sorted ascending)
+    
+    e.g.
+        { a b c } \_ Group A
+        { d e f } /
+        { a b e } \_ Group B
+        { c j k } /  
+        { q r s } -  Set
+    
+    Group A*
+        Count: 6
+        AllElement: abcdef
+    Group B
+        Count: 6
+        AllElement: abcejk
+    
+    Which would result in:
+        { a b c d e f q r s }
+        { a b e c j k }
+    
     .INPUTS
     System.Collection.Generic.HashSet<System.Object>
     
@@ -121,8 +147,8 @@ END {
     write-verbose "Grouping wrapped objects"
     $setGroups = @()
     foreach($wrapperObj in $wrapperObjs) {
-        write-verbose "Matching Set $($wrapperObj.HashSet)"
         # Add to any existing Set Groups that don't overlap
+        write-verbose "Matching Set $($wrapperObj.HashSet)"
         $matchResult = $false
         if($setGroups.count -ne 0) {
             foreach($setGroup in $setGroups) {
@@ -143,6 +169,7 @@ END {
         if(!$matchResult) {
             write-verbose "New SetGroup"
             $newSetGroup = [pscustomobject]@{
+                PsTypeName = 'HashSetGroup'
                 SuperSet = new-object 'System.Collections.Generic.HashSet[System.Object]'($wrapperObj.HashSet)
                 Sets = @(,$wrapperObj.HashSet)
                 Objects = @()
@@ -150,13 +177,22 @@ END {
             if($wrapperObj.Object -ne $null) {
                 $newSetGroup.Objects += @(,$wrapperObj.Object)
             }
-            $newSetGroup | Add-Member -MemberType ScriptProperty -Name "Count" -Value { $this.SuperSet.Count }
+            # Primary sort key
+            $newSetGroup | Add-Member -MemberType ScriptProperty -Name "Count" -Value {
+                $this.SuperSet.Count
+            }
+            # Secondary Sort Key
+            $newSetGroup | Add-Member -MemberType ScriptProperty -Name 'AllElements' -Value {
+                $x = $this.SuperSet -as [object[]]
+                [array]::Sort($x)
+                $x -join ''
+            }
             $setGroups += $newSetGroup
         }
         # Sort so we're checking the largest SuperSets for a match first
         # Without check PS will unbox the array
         if($setGroups.count -gt 1) {
-            $setGroups = $setGroups | Sort-Object -Property Count -Descending
+            $setGroups = $setGroups | Sort-Object -Property @{Expression = "Count"; Descending = $True}, @{Expression = "AllElements"; Descending = $False}
         }
     }
     return $setGroups
