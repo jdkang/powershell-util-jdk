@@ -92,7 +92,7 @@ param(
     $InputObject,
     # Specify the property which is as HashSet<System.Object>
     [Parameter(ParameterSetName='FromProperty',Mandatory=$true)]
-    [System.Object]
+    [string]
     $HashSetProperty,
     [switch]$DebugReturnWrapperObjs
 )
@@ -173,6 +173,7 @@ END {
                 SuperSet = new-object 'System.Collections.Generic.HashSet[System.Object]'($wrapperObj.HashSet)
                 Sets = @(,$wrapperObj.HashSet)
                 Objects = @()
+                GroupId = -1
             }
             if($wrapperObj.Object -ne $null) {
                 $newSetGroup.Objects += @(,$wrapperObj.Object)
@@ -195,5 +196,12 @@ END {
             $setGroups = $setGroups | Sort-Object -Property @{Expression = "Count"; Descending = $True}, @{Expression = "AllElements"; Descending = $False}
         }
     }
+    # Stamp GroupIds based on final order
+    $groupId = 0
+    foreach($setGroup in $setGroups) {
+        $groupId++
+        $setGroup.GroupId = $groupId
+    }
+    # ret
     return $setGroups
 }}

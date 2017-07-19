@@ -98,6 +98,11 @@ Describe "Group-NoOverlapHashSets" {
             $result[1].Sets[1].SetEquals($set7)
             $result[2].Sets[0].SetEquals($set3)
         }
+        It "Should Return Ordinal GroupIds" {
+            $result[0].GroupId | Should Be 1
+            $result[1].GroupId | Should Be 2
+            $result[2].GroupId | Should Be 3
+        }
     }
     Context "HashSet as Property" {
         # Arrange
@@ -175,6 +180,11 @@ Describe "Group-NoOverlapHashSets" {
             $result[1].Objects[1].Letters.SetEquals($set7) | Should Be $true
             $result[2].Objects[0].Name | Should Be "s3"
             $result[2].Objects[0].Letters.SetEquals($set3) | Should Be $true
+        }
+        It "Should Return Ordinal GroupIds" {
+            $result[0].GroupId | Should Be 1
+            $result[1].GroupId | Should Be 2
+            $result[2].GroupId | Should Be 3
         }
     }
     Context "Grouping Preference" {
